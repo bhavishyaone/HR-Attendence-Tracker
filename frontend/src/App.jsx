@@ -1,26 +1,23 @@
-import React from "react";
 import {
+  Navigate,
+  Route,
   BrowserRouter as Router,
   Routes,
-  Route,
-  Navigate,
 } from "react-router-dom";
-import Login from "./components/Login";
-import Signup from "./components/Signup";
-import Dashboard from "./components/Dashboard";
 import "./App.css";
+import Dashboard from "./components/Dashboard";
+import EmployeeManagement from "./components/EmployeeManagement";
+import Login from "./components/Login";
 
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Routes>
-      </div>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/employees" element={<EmployeeManagement />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+      </Routes>
     </Router>
   );
 }
