@@ -1,16 +1,16 @@
-import React from "react";
 import {
+  Navigate,
+  Route,
   BrowserRouter as Router,
   Routes,
-  Route,
-  Navigate,
 } from "react-router-dom";
 import Login from "./components/Login.jsx";
 // import Signup from "./components/Signup.jsx";
+import "./App.css";
+import AttendanceRecords from "./components/AttendanceRecords.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Departments from "./components/DepartmentProfile.jsx";
 import MarkAttendance from "./components/MarkAttendance.jsx";
-import "./App.css";
 
 function App() {
   return (
@@ -23,6 +23,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/departments" element={<Departments />} />
           <Route path="/mark-attendance" element={<MarkAttendance />} />
+          <Route path="/attendance" element={<AttendanceRecords />} />
         </Routes>
       </div>
     </Router>

@@ -13,10 +13,34 @@ const AttendanceRecords = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const stats = [
-    { icon: "✓", label: "Total Present", value: "1,204", color: "#d1fae5", iconColor: "#10b981" },
-    { icon: "✕", label: "Total Absent", value: "58", color: "#fee2e2", iconColor: "#ef4444" },
-    { icon: "🏆", label: "Total Half Days", value: "32", color: "#fef3c7", iconColor: "#f59e0b" },
-    { icon: "📅", label: "Total on Leave", value: "112", color: "#e0e7ff", iconColor: "#6366f1" },
+    {
+      icon: "✓",
+      label: "Total Present",
+      value: "1,204",
+      color: "#d1fae5",
+      iconColor: "#10b981",
+    },
+    {
+      icon: "✕",
+      label: "Total Absent",
+      value: "58",
+      color: "#fee2e2",
+      iconColor: "#ef4444",
+    },
+    {
+      icon: "🏆",
+      label: "Total Half Days",
+      value: "32",
+      color: "#fef3c7",
+      iconColor: "#f59e0b",
+    },
+    {
+      icon: "📅",
+      label: "Total on Leave",
+      value: "112",
+      color: "#e0e7ff",
+      iconColor: "#6366f1",
+    },
   ];
 
   const attendanceData = [
@@ -171,12 +195,7 @@ const AttendanceRecords = () => {
             </svg>
           </button>
           <div className="user-avatar">
-            <svg
-              width="32"
-              height="32"
-              viewBox="0 0 32 32"
-              fill="none"
-            >
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
               <circle cx="16" cy="16" r="16" fill="#F3E5D8" />
               <circle cx="16" cy="12" r="5" fill="#8B5A3C" />
               <path
@@ -367,7 +386,11 @@ const AttendanceRecords = () => {
                   <td>{record.checkOut}</td>
                   <td>{record.totalHours}</td>
                   <td>
-                    <span className={`status-badge ${getStatusClass(record.status)}`}>
+                    <span
+                      className={`status-badge ${getStatusClass(
+                        record.status
+                      )}`}
+                    >
                       {record.status}
                     </span>
                   </td>
