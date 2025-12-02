@@ -4,14 +4,14 @@ import {
   BrowserRouter as Router,
   Routes,
 } from "react-router-dom";
-import Login from "./components/Login.jsx";
-import Register from "./components/Register.jsx";
 import "./App.css";
 import AttendanceRecords from "./components/AttendanceRecords.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Departments from "./components/DepartmentProfile.jsx";
 import LeaveApplication from "./components/LeaveApplication.jsx";
+import Login from "./components/Login.jsx";
 import MarkAttendance from "./components/MarkAttendance.jsx";
+import Register from "./components/Register.jsx";
 
 function App() {
   return (
