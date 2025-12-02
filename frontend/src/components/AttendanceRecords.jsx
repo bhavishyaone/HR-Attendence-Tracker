@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import "../styles/AttendanceRecords.css";
 
 const AttendanceRecords = () => {
@@ -12,93 +13,98 @@ const AttendanceRecords = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
 
+  const [attendanceData, setAttendanceData] = useState([]);
+
+  // Calculate stats dynamically
+  const totalPresent = attendanceData.filter((r) => r.status === "Present").length;
+  const totalAbsent = attendanceData.filter((r) => r.status === "Absent").length;
+  const totalHalfDays = attendanceData.filter((r) => r.status === "Half Day").length;
+  const totalLeaves = attendanceData.filter((r) => r.status === "On Leave").length;
+
   const stats = [
     {
       icon: "✓",
       label: "Total Present",
-      value: "1,204",
+      value: totalPresent,
       color: "#d1fae5",
       iconColor: "#10b981",
     },
     {
       icon: "✕",
       label: "Total Absent",
-      value: "58",
+      value: totalAbsent,
       color: "#fee2e2",
       iconColor: "#ef4444",
     },
     {
       icon: "🏆",
       label: "Total Half Days",
-      value: "32",
+      value: totalHalfDays,
       color: "#fef3c7",
       iconColor: "#f59e0b",
     },
     {
       icon: "📅",
       label: "Total on Leave",
-      value: "112",
+      value: totalLeaves,
       color: "#e0e7ff",
       iconColor: "#6366f1",
     },
   ];
 
-  const attendanceData = [
-    {
-      date: "Oct 26, 2023",
-      employeeName: "Alex Johnson",
-      department: "Engineering",
-      checkIn: "09:05 AM",
-      checkOut: "06:10 PM",
-      totalHours: "9h 5m",
-      status: "Present",
-    },
-    {
-      date: "Oct 26, 2023",
-      employeeName: "Maria Garcia",
-      department: "Marketing",
-      checkIn: "-",
-      checkOut: "-",
-      totalHours: "-",
-      status: "Absent",
-    },
-    {
-      date: "Oct 26, 2023",
-      employeeName: "James Smith",
-      department: "Sales",
-      checkIn: "01:00 PM",
-      checkOut: "05:30 PM",
-      totalHours: "4h 30m",
-      status: "Half Day",
-    },
-    {
-      date: "Oct 26, 2023",
-      employeeName: "David Miller",
-      department: "Engineering",
-      checkIn: "-",
-      checkOut: "-",
-      totalHours: "-",
-      status: "On Leave",
-    },
-    {
-      date: "Oct 25, 2023",
-      employeeName: "Sarah Wilson",
-      department: "Marketing",
-      checkIn: "09:15 AM",
-      checkOut: "06:00 PM",
-      totalHours: "8h 45m",
-      status: "Present",
-    },
-    {
-      date: "Oct 25, 2023",
-      employeeName: "Michael Brown",
-      department: "Sales",
-      checkIn: "08:50 AM",
-      checkOut: "05:55 PM",
-      totalHours: "9h 5m",
-      status: "Present",
-    },
-  ];
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get("http://localhost:3000/attendance", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const formattedData = response.data.map((record) => ({
+          date: new Date(record.date).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          }),
+          employeeName: record.employee.name,
+          department: record.employee.department?.name || "N/A",
+          checkIn: record.checkInTime
+            ? new Date(record.checkInTime).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-",
+          checkOut: record.checkOutTime
+            ? new Date(record.checkOutTime).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "-",
+          totalHours: record.totalHours ? `${record.totalHours}h` : "-",
+          status: record.status.charAt(0) + record.status.slice(1).toLowerCase(),
+        }));
+        setAttendanceData(formattedData);
+      } catch (error) {
+        console.error("Error fetching attendance:", error);
+      }
+    };
+
+    fetchAttendance();
+  }, []);
+
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(attendanceData.length / itemsPerPage);
+  const currentData = attendanceData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   const handleFilterChange = (field, value) => {
     setFilters({ ...filters, [field]: value });
@@ -159,12 +165,6 @@ const AttendanceRecords = () => {
           <a href="/attendance" className="nav-link active">
             Attendance
           </a>
-          <a href="/leave" className="nav-link">
-            Leave
-          </a>
-          <a href="/reports" className="nav-link">
-            Reports
-          </a>
         </div>
 
         <div className="nav-right">
@@ -216,7 +216,7 @@ const AttendanceRecords = () => {
               View and manage employee attendance data for your organization.
             </p>
           </div>
-          <button className="export-btn">
+          {/* <button className="export-btn">
             <svg
               width="20"
               height="20"
@@ -230,119 +230,10 @@ const AttendanceRecords = () => {
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
             Export Data
-          </button>
+          </button> */}
         </div>
 
         {/* Filters */}
-        <div className="filters-section">
-          <div className="filter-group">
-            <label>From Date</label>
-            <div className="date-input">
-              <input
-                type="text"
-                value={filters.fromDate}
-                onChange={(e) => handleFilterChange("fromDate", e.target.value)}
-              />
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <label>To Date</label>
-            <div className="date-input">
-              <input
-                type="text"
-                value={filters.toDate}
-                onChange={(e) => handleFilterChange("toDate", e.target.value)}
-              />
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                <line x1="16" y1="2" x2="16" y2="6" />
-                <line x1="8" y1="2" x2="8" y2="6" />
-                <line x1="3" y1="10" x2="21" y2="10" />
-              </svg>
-            </div>
-          </div>
-
-          <div className="filter-group">
-            <label>Department</label>
-            <select
-              value={filters.department}
-              onChange={(e) => handleFilterChange("department", e.target.value)}
-            >
-              <option>All Departments</option>
-              <option>Engineering</option>
-              <option>Marketing</option>
-              <option>Sales</option>
-              <option>HR</option>
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Status</label>
-            <select
-              value={filters.status}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
-            >
-              <option>All Statuses</option>
-              <option>Present</option>
-              <option>Absent</option>
-              <option>Half Day</option>
-              <option>On Leave</option>
-            </select>
-          </div>
-
-          <div className="filter-group search-group">
-            <label>Search Employee</label>
-            <div className="search-input">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                type="text"
-                placeholder="Enter name..."
-                value={filters.searchEmployee}
-                onChange={(e) =>
-                  handleFilterChange("searchEmployee", e.target.value)
-                }
-              />
-            </div>
-          </div>
-
-          <div className="filter-actions">
-            <button className="reset-btn" onClick={handleReset}>
-              Reset
-            </button>
-            <button className="apply-btn">Apply Filters</button>
-          </div>
-        </div>
 
         {/* Stats Cards */}
         <div className="stats-grid">
@@ -377,7 +268,7 @@ const AttendanceRecords = () => {
               </tr>
             </thead>
             <tbody>
-              {attendanceData.map((record, index) => (
+              {currentData.map((record, index) => (
                 <tr key={index}>
                   <td>{record.date}</td>
                   <td className="employee-name">{record.employeeName}</td>
@@ -402,15 +293,37 @@ const AttendanceRecords = () => {
 
         {/* Pagination */}
         <div className="pagination">
-          <div className="pagination-info">Showing 1-6 of 100</div>
+          <div className="pagination-info">
+            Showing {(currentPage - 1) * itemsPerPage + 1}-
+            {Math.min(currentPage * itemsPerPage, attendanceData.length)} of{" "}
+            {attendanceData.length}
+          </div>
           <div className="pagination-controls">
-            <button className="pagination-btn" disabled>
+            <button
+              className="pagination-btn"
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+            >
               Previous
             </button>
-            <button className="pagination-btn active">1</button>
-            <button className="pagination-btn">2</button>
-            <button className="pagination-btn">3</button>
-            <button className="pagination-btn">Next</button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                className={`pagination-btn ${
+                  currentPage === page ? "active" : ""
+                }`}
+                onClick={() => handlePageChange(page)}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              className="pagination-btn"
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+            >
+              Next
+            </button>
           </div>
         </div>
       </main>

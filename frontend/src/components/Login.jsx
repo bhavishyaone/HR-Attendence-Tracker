@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Auth.css";
+import axios from "axios";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -12,8 +13,24 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Implement login API call
-    console.log("Login:", { email, password, rememberMe });
+    try {
+      const response = await axios.post("http://localhost:3000/auth/login", {
+        email,
+        password,
+      });
+
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        localStorage.setItem("userName", response.data.employee.name);
+        localStorage.setItem("userRole", response.data.employee.role);
+        localStorage.setItem("employeeId", response.data.employee.id);
+        // Navigate based on role if needed, for now default to dashboard
+        navigate("/dashboard");
+      }
+    } catch (error) {
+        console.error("Login error:", error);
+        alert(error.response?.data?.message || "Login failed");
+    }
   };
 
   const handleRegisterClick = () => {

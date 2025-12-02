@@ -4,6 +4,8 @@ import "../styles/Sidebar.css";
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const userName = localStorage.getItem("userName") || "User";
+  const userRole = localStorage.getItem("userRole") || "Employee";
 
   const menuItems = [
     {
@@ -31,16 +33,10 @@ const Sidebar = () => {
       path: "/attendance",
     },
     {
-      id: "reports",
-      label: "Reports",
-      icon: "chart",
-      path: "/reports",
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      icon: "settings",
-      path: "/settings",
+      id: "leave-application",
+      label: "Leave Application",
+      icon: "calendar", // Reusing calendar icon for now
+      path: "/leave-application",
     },
   ];
 
@@ -173,8 +169,8 @@ const Sidebar = () => {
             </svg>
           </div>
           <div className="admin-info">
-            <h3 className="admin-name">HR Admin</h3>
-            <p className="admin-email">admin@company.com</p>
+            <h3 className="admin-name">{userName}</h3>
+            <p className="admin-email">{userRole}</p>
           </div>
         </div>
       </div>

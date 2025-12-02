@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import "../styles/EmployeesProfile.css";
@@ -8,105 +9,160 @@ const EmployeeDetail = () => {
   const [activeTab, setActiveTab] = useState("attendance");
   const [selectedPeriod, setSelectedPeriod] = useState("Last 30 Days");
 
-  // Mock data - replace with actual API calls
-  const employee = {
-    id: 1,
-    name: "Jane Doe",
-    position: "Product Designer",
-    email: "jane.doe@example.com",
-    phone: "+1 234 567 890",
-    department: "Product",
-    joinDate: "August 15, 2022",
-    status: "Active",
-    avatar: null,
-    stats: {
-      totalPresentDays: 248,
-      totalLeavesTaken: 12,
-      averageHours: 8.1,
-    },
-  };
+  const [employee, setEmployee] = useState(null);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [leaveData, setLeaveData] = useState([]);
+  const [payrollData, setPayrollData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const attendanceData = [
-    {
-      date: "Oct 24, 2023",
-      checkIn: "09:02 AM",
-      checkOut: "05:30 PM",
-      hours: "8.5h",
-      status: "Present",
-    },
-    {
-      date: "Oct 23, 2023",
-      checkIn: "--",
-      checkOut: "--",
-      hours: "--",
-      status: "Absent",
-    },
-    {
-      date: "Oct 22, 2023",
-      checkIn: "09:05 AM",
-      checkOut: "05:01 PM",
-      hours: "8.0h",
-      status: "Present",
-    },
-    {
-      date: "Oct 21, 2023",
-      checkIn: "09:15 AM",
-      checkOut: "05:35 PM",
-      hours: "8.3h",
-      status: "Present",
-    },
-  ];
+  useEffect(() => {
+    const fetchEmployeeData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const employeeId = localStorage.getItem("employeeId");
 
-  const leaveData = [
-    {
-      startDate: "Nov 15, 2023",
-      endDate: "Nov 16, 2023",
-      reason: "Sick Leave",
-      status: "Approved",
-      days: 2,
-    },
-    {
-      startDate: "Oct 10, 2023",
-      endDate: "Oct 12, 2023",
-      reason: "Personal",
-      status: "Approved",
-      days: 3,
-    },
-    {
-      startDate: "Sep 05, 2023",
-      endDate: "Sep 05, 2023",
-      reason: "Medical",
-      status: "Rejected",
-      days: 1,
-    },
-  ];
+        if (!token || !employeeId) {
+          navigate("/login");
+          return;
+        }
 
-  const payrollData = [
-    {
-      month: "October 2023",
-      baseSalary: "$5,000",
-      bonus: "$500",
-      deductions: "$200",
-      netPay: "$5,300",
-      status: "Paid",
-    },
-    {
-      month: "September 2023",
-      baseSalary: "$5,000",
-      bonus: "$300",
-      deductions: "$200",
-      netPay: "$5,100",
-      status: "Paid",
-    },
-    {
-      month: "August 2023",
-      baseSalary: "$5,000",
-      bonus: "$0",
-      deductions: "$200",
-      netPay: "$4,800",
-      status: "Paid",
-    },
-  ];
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // 1. Fetch Employee Details
+        const empRes = await axios.get(
+          `http://localhost:3000/employees/${employeeId}`,
+          { headers }
+        );
+        const empData = empRes.data;
+
+        // 2. Fetch Attendance
+        const attRes = await axios.get(
+          `http://localhost:3000/attendance/${employeeId}`,
+          { headers }
+        );
+        const attRecords = attRes.data;
+
+        // 3. Fetch Leaves
+        const leaveRes = await axios.get(
+          `http://localhost:3000/leaves/employee/${employeeId}`,
+          { headers }
+        );
+        const leaveRecords = leaveRes.data.leave || [];
+
+        // 4. Fetch Payrolls
+        const payrollRes = await axios.get(
+          `http://localhost:3000/payrolls/employee/${employeeId}`,
+          { headers }
+        );
+        const payrollRecords = payrollRes.data || [];
+
+        // Calculate Stats
+        const totalPresent = attRecords.filter(
+          (r) => r.status === "PRESENT"
+        ).length;
+        const totalLeaves = leaveRecords.filter(
+          (l) => l.status === "APPROVED"
+        ).length;
+        
+        const totalHours = attRecords.reduce(
+          (acc, curr) => acc + Number(curr.totalHours || 0),
+          0
+        );
+        const avgHours =
+          attRecords.length > 0
+            ? (totalHours / attRecords.length).toFixed(1)
+            : 0;
+
+        setEmployee({
+          ...empData,
+          position: empData.role, // Mapping role to position for now
+          department: empData.department?.name || "N/A",
+          joinDate: new Date(empData.createdAt).toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          }),
+          status: "Active", // Hardcoded for now, or add to DB
+          avatar: null,
+          stats: {
+            totalPresentDays: totalPresent,
+            totalLeavesTaken: totalLeaves,
+            averageHours: avgHours,
+          },
+        });
+
+        // Format Attendance Data
+        const formattedAttendance = attRecords.map((record) => ({
+          date: new Date(record.date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+          checkIn: record.checkInTime
+            ? new Date(record.checkInTime).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "--",
+          checkOut: record.checkOutTime
+            ? new Date(record.checkOutTime).toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })
+            : "--",
+          hours: record.totalHours ? `${record.totalHours}h` : "--",
+          status: record.status.charAt(0) + record.status.slice(1).toLowerCase(),
+        }));
+        setAttendanceData(formattedAttendance);
+
+        // Format Leave Data
+        const formattedLeaves = leaveRecords.map((record) => ({
+          startDate: new Date(record.startDate).toLocaleDateString(),
+          endDate: new Date(record.endDate).toLocaleDateString(),
+          reason: record.reason,
+          status: record.status.charAt(0) + record.status.slice(1).toLowerCase(),
+          days:
+            Math.ceil(
+              (new Date(record.endDate) - new Date(record.startDate)) /
+                (1000 * 60 * 60 * 24)
+            ) + 1,
+        }));
+        setLeaveData(formattedLeaves);
+
+        // Format Payroll Data
+        const formattedPayrolls = payrollRecords.map((record) => {
+          const date = new Date(record.year, record.month - 1);
+          const monthName = date.toLocaleString("default", { month: "long" });
+          return {
+            month: `${monthName} ${record.year}`,
+            baseSalary: `$${record.baseSalary.toLocaleString()}`,
+            bonus: "$0", // Placeholder as backend doesn't have bonus yet
+            deductions: `$${record.deductions.toLocaleString()}`,
+            netPay: `$${record.netSalary.toLocaleString()}`,
+            status: "Paid", // Default status as records exist
+          };
+        });
+        setPayrollData(formattedPayrolls);
+
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching employee profile:", error);
+        setLoading(false);
+      }
+    };
+
+    fetchEmployeeData();
+  }, [navigate]);
+
+  if (loading) {
+    return <div className="loading">Loading profile...</div>;
+  }
+
+  if (!employee) {
+    return <div className="error">Failed to load profile.</div>;
+  }
 
   const getStatusClass = (status) => {
     const statusLower = status.toLowerCase();
@@ -406,43 +462,7 @@ const EmployeeDetail = () => {
         </div>
 
         {/* Bottom Profile Section */}
-        <div className="bottom-profile">
-          <div className="profile-avatar-small">
-            <svg
-              width="40"
-              height="40"
-              viewBox="0 0 40 40"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle cx="20" cy="20" r="20" fill="#4A5568" />
-              <circle cx="20" cy="16" r="6" fill="#E2E8F0" />
-              <path
-                d="M10 32C10 25 14 22 20 22C26 22 30 25 30 32"
-                fill="#E2E8F0"
-              />
-            </svg>
-          </div>
-          <div className="profile-info">
-            <h3>Alex Grim</h3>
-            <p>HR Manager</p>
-          </div>
-          <button className="logout-btn-small">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
-            </svg>
-            Logout
-          </button>
-        </div>
+
       </div>
     </div>
   );

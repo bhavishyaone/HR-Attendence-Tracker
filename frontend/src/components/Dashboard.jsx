@@ -1,80 +1,137 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles/Dashboard.css";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [userData, setUserData] = useState({
-    name: "Brooklyn",
+    name: "User",
     role: "Employee",
   });
 
-  const stats = [
-    { label: "Total Present Days", value: "18" },
-    { label: "Total Absent Days", value: "2" },
-    { label: "Pending Leaves", value: "1" },
-    { label: "This Month's Hours", value: "144h" },
-  ];
+  useEffect(() => {
+    const name = localStorage.getItem("userName");
+    const role = localStorage.getItem("userRole");
+    if (name) {
+      setUserData({ name, role: role || "Employee" });
+    }
+  }, []);
 
-  const recentAttendance = [
-    {
-      date: "Oct 26, 2023",
-      checkIn: "09:02 AM",
-      checkOut: "06:05 PM",
-      totalHours: "9h 3m",
-      status: "Present",
-    },
-    {
-      date: "Oct 25, 2023",
-      checkIn: "09:15 AM",
-      checkOut: "05:30 PM",
-      totalHours: "8h 15m",
-      status: "Present",
-    },
-    {
-      date: "Oct 24, 2023",
-      checkIn: "-",
-      checkOut: "-",
-      totalHours: "-",
-      status: "Absent",
-    },
-    {
-      date: "Oct 23, 2023",
-      checkIn: "09:00 AM",
-      checkOut: "01:00 PM",
-      totalHours: "4h 0m",
-      status: "Half-day",
-    },
-    {
-      date: "Oct 22, 2023",
-      checkIn: "-",
-      checkOut: "-",
-      totalHours: "-",
-      status: "Holiday",
-    },
-  ];
+  const [stats, setStats] = useState([
+    { label: "Total Present Days", value: "0" },
+    { label: "Total Absent Days", value: "0" },
+    { label: "Pending Leaves", value: "0" },
+    { label: "This Month's Hours", value: "0h" },
+  ]);
+  const [recentAttendance, setRecentAttendance] = useState([]);
+  const [upcomingLeaves, setUpcomingLeaves] = useState([]);
 
-  const upcomingLeaves = [
-    {
-      type: "Casual Leave",
-      date: "Nov 15, 2023 (Full Day)",
-      icon: "✈️",
-      color: "#E0F7FA",
-    },
-    {
-      type: "Sick Leave",
-      date: "Dec 04, 2023 - Dec 05, 2023",
-      icon: "🤒",
-      color: "#E0F7FA",
-    },
-    {
-      type: "Unpaid Leave",
-      date: "Jan 10, 2024",
-      icon: "🏆",
-      color: "#FFF9E6",
-      badge: "Pending",
-    },
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const employeeId = localStorage.getItem("employeeId");
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          navigate("/login");
+          return;
+        }
+
+        if (!employeeId) {
+          alert("Please log out and log back in to load your dashboard data.");
+          return;
+        }
+
+        const headers = { Authorization: `Bearer ${token}` };
+
+        // Fetch Attendance
+        const attendanceRes = await axios.get(
+          `http://localhost:3000/attendance/${employeeId}`,
+          { headers }
+        );
+        const attendanceRecords = attendanceRes.data;
+
+        // Fetch Leaves
+        const leavesRes = await axios.get(
+          `http://localhost:3000/leaves/employee/${employeeId}`,
+          { headers }
+        );
+        const leaveRecords = leavesRes.data.leave || [];
+
+        // Calculate Stats
+        const presentDays = attendanceRecords.filter(
+          (r) => r.status === "PRESENT"
+        ).length;
+        const absentDays = attendanceRecords.filter(
+          (r) => r.status === "ABSENT"
+        ).length;
+        const pendingLeaves = leaveRecords.filter(
+          (l) => l.status === "PENDING"
+        ).length;
+        
+        const currentMonth = new Date().getMonth();
+        const totalHours = attendanceRecords
+          .filter((r) => new Date(r.date).getMonth() === currentMonth)
+          .reduce((acc, curr) => acc + Number(curr.totalHours || 0), 0);
+
+        setStats([
+          { label: "Total Present Days", value: presentDays.toString() },
+          { label: "Total Absent Days", value: absentDays.toString() },
+          { label: "Pending Leaves", value: pendingLeaves.toString() },
+          { label: "This Month's Hours", value: `${Number(totalHours).toFixed(1)}h` },
+        ]);
+
+        // Format Recent Attendance (Last 5)
+        const sortedAttendance = attendanceRecords
+          .sort((a, b) => new Date(b.date) - new Date(a.date))
+          .slice(0, 5)
+          .map((record) => ({
+            date: new Date(record.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            checkIn: record.checkInTime
+              ? new Date(record.checkInTime).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-",
+            checkOut: record.checkOutTime
+              ? new Date(record.checkOutTime).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })
+              : "-",
+            totalHours: record.totalHours ? `${record.totalHours}h` : "-",
+            status: record.status.charAt(0) + record.status.slice(1).toLowerCase(),
+          }));
+        setRecentAttendance(sortedAttendance);
+
+        // Format Upcoming Leaves
+        const upcoming = leaveRecords
+          .filter((l) => new Date(l.startDate) > new Date())
+          .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+          .slice(0, 3)
+          .map((leave) => ({
+            type: leave.reason || "Leave", // Using reason as type for now
+            date: `${new Date(leave.startDate).toLocaleDateString()} - ${new Date(
+              leave.endDate
+            ).toLocaleDateString()}`,
+            icon: "📅",
+            color: "#E0F7FA",
+            badge: leave.status,
+          }));
+        setUpcomingLeaves(upcoming);
+
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   const getStatusClass = (status) => {
     switch (status.toLowerCase()) {
@@ -111,7 +168,7 @@ const Dashboard = () => {
           <h1 className="dashboard-title">Attendance Dashboard</h1>
         </div>
         <div className="header-right">
-          <span className="user-name">{userData.name} Simmons</span>
+          <span className="user-name">{userData.name} </span>
           <span className="user-role">{userData.role}</span>
           <div className="user-avatar">
             <svg
@@ -143,7 +200,7 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="action-buttons">
-            <button className="btn-primary">
+            <button className="btn-primary" onClick={() => navigate("/mark-attendance")}>
               <svg
                 width="20"
                 height="20"
@@ -157,7 +214,7 @@ const Dashboard = () => {
               </svg>
               Mark Attendance
             </button>
-            <button className="btn-secondary">
+            <button className="btn-secondary" onClick={() => navigate("/leave-application")}>
               <svg
                 width="20"
                 height="20"
@@ -223,7 +280,7 @@ const Dashboard = () => {
                 </tbody>
               </table>
             </div>
-            <button className="view-all-btn">View All Activity</button>
+            {/* <button className="view-all-btn">View All Activity</button> */}
           </section>
 
           {/* Upcoming Leaves */}

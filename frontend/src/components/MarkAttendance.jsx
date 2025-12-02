@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
 import Sidebar from "./Sidebar";
 import "../styles/MarkAttendance.css";
 
@@ -11,12 +12,60 @@ const MarkAttendance = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const userData = {
-    name: "Jane Doe",
-    id: "EMP001",
-    department: "Marketing Department",
+  const [attendanceId, setAttendanceId] = useState(null);
+  const [userData, setUserData] = useState({
+    name: "",
+    id: "",
+    department: "",
     avatar: "👤",
-  };
+  });
+
+  useEffect(() => {
+    const fetchUserDataAndStatus = async () => {
+      const token = localStorage.getItem("token");
+      const employeeId = localStorage.getItem("employeeId");
+      const name = localStorage.getItem("userName");
+      const role = localStorage.getItem("userRole"); // Assuming role might be useful later
+
+      if (!token || !employeeId) {
+        // Handle not logged in
+        return;
+      }
+
+      setUserData({
+        name: name || "Employee",
+        id: employeeId,
+        department: "Engineering", // You might want to store department in localStorage too
+        avatar: "👤",
+      });
+
+      try {
+        const response = await axios.get(
+          `http://localhost:3000/attendance/${employeeId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        const todayStr = new Date().toISOString().split("T")[0];
+        const todayRecord = response.data.find((record) =>
+          record.date.startsWith(todayStr)
+        );
+
+        if (todayRecord) {
+          setAttendanceId(todayRecord.id);
+          setCheckInTime(new Date(todayRecord.checkInTime));
+          if (todayRecord.checkOutTime) {
+            setCheckOutTime(new Date(todayRecord.checkOutTime));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching attendance status:", error);
+      }
+    };
+
+    fetchUserDataAndStatus();
+  }, []);
 
   // Update current time every second
   useEffect(() => {
@@ -52,25 +101,59 @@ const MarkAttendance = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const handleCheckIn = () => {
-    const now = new Date();
-    setCheckInTime(now);
-    setSuccessMessage(`Checked in successfully at ${formatTime(now)}.`);
-    setErrorMessage("");
-    setTimeout(() => setSuccessMessage(""), 5000);
+  const handleCheckIn = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const employeeId = localStorage.getItem("employeeId");
+
+      const response = await axios.post(
+        "http://localhost:3000/attendance/check-in",
+        { employeeId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const now = new Date();
+      setCheckInTime(now);
+      setAttendanceId(response.data.attendance.id);
+      setSuccessMessage(`Checked in successfully at ${formatTime(now)}.`);
+      setErrorMessage("");
+      setTimeout(() => setSuccessMessage(""), 5000);
+    } catch (error) {
+      console.error("Check-in error:", error);
+      setErrorMessage(
+        error.response?.data?.message || "Failed to check in. Please try again."
+      );
+      setTimeout(() => setErrorMessage(""), 5000);
+    }
   };
 
-  const handleCheckOut = () => {
+  const handleCheckOut = async () => {
     if (!checkInTime) {
       setErrorMessage("Please check in first before checking out.");
       setTimeout(() => setErrorMessage(""), 5000);
       return;
     }
-    const now = new Date();
-    setCheckOutTime(now);
-    setSuccessMessage(`Checked out successfully at ${formatTime(now)}.`);
-    setErrorMessage("");
-    setTimeout(() => setSuccessMessage(""), 5000);
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.post(
+        "http://localhost:3000/attendance/check-out",
+        { id: attendanceId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const now = new Date();
+      setCheckOutTime(now);
+      setSuccessMessage(`Checked out successfully at ${formatTime(now)}.`);
+      setErrorMessage("");
+      setTimeout(() => setSuccessMessage(""), 5000);
+    } catch (error) {
+      console.error("Check-out error:", error);
+      setErrorMessage(
+        error.response?.data?.message || "Failed to check out. Please try again."
+      );
+      setTimeout(() => setErrorMessage(""), 5000);
+    }
   };
 
   const getCreatedAt = () => {

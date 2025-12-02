@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Register.css";
+import axios from "axios";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -40,11 +41,26 @@ const Register = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Registration data:", formData);
-    // Add API call here for registration
-    // After successful registration, navigate to login or dashboard
+    try {
+      const response = await axios.post("http://localhost:3000/auth/register", {
+        name: formData.fullName,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        department: formData.department,
+        role: formData.role,
+      });
+
+      if (response.status === 201) {
+        alert("Registration successful! Please login.");
+        navigate("/login");
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      alert(error.response?.data?.message || "Registration failed");
+    }
   };
 
   return (
