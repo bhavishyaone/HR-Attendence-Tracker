@@ -47,14 +47,14 @@ const Dashboard = () => {
 
         // Fetch Attendance
         const attendanceRes = await axios.get(
-          `http://localhost:3000/attendance/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/attendance/${employeeId}`,
           { headers }
         );
         const attendanceRecords = attendanceRes.data;
 
         // Fetch Leaves
         const leavesRes = await axios.get(
-          `http://localhost:3000/leaves/employee/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/leaves/employee/${employeeId}`,
           { headers }
         );
         const leaveRecords = leavesRes.data.leave || [];

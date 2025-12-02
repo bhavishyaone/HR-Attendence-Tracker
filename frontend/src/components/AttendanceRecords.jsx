@@ -56,7 +56,7 @@ const AttendanceRecords = () => {
     const fetchAttendance = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:3000/attendance", {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/attendance`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

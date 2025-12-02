@@ -41,7 +41,7 @@ const MarkAttendance = () => {
 
       try {
         const response = await axios.get(
-          `http://localhost:3000/attendance/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/attendance/${employeeId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -105,14 +105,18 @@ const MarkAttendance = () => {
     try {
       const token = localStorage.getItem("token");
       const employeeId = localStorage.getItem("employeeId");
+      const now = new Date();
 
       const response = await axios.post(
-        "http://localhost:3000/attendance/check-in",
-        { employeeId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        `${import.meta.env.VITE_API_URL}/attendance/check-in`,
+        {
+          employeeId,
+          checkInTime: now.toISOString(),
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
-
-      const now = new Date();
       setCheckInTime(now);
       setAttendanceId(response.data.attendance.id);
       setSuccessMessage(`Checked in successfully at ${formatTime(now)}.`);

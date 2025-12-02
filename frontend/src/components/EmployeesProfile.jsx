@@ -30,28 +30,28 @@ const EmployeeDetail = () => {
 
         // 1. Fetch Employee Details
         const empRes = await axios.get(
-          `http://localhost:3000/employees/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/employees/${employeeId}`,
           { headers }
         );
         const empData = empRes.data;
 
         // 2. Fetch Attendance
         const attRes = await axios.get(
-          `http://localhost:3000/attendance/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/attendance/${employeeId}`,
           { headers }
         );
         const attRecords = attRes.data;
 
         // 3. Fetch Leaves
         const leaveRes = await axios.get(
-          `http://localhost:3000/leaves/employee/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/leaves/employee/${employeeId}`,
           { headers }
         );
         const leaveRecords = leaveRes.data.leave || [];
 
         // 4. Fetch Payrolls
         const payrollRes = await axios.get(
-          `http://localhost:3000/payrolls/employee/${employeeId}`,
+          `${import.meta.env.VITE_API_URL}/payrolls/employee/${employeeId}`,
           { headers }
         );
         const payrollRecords = payrollRes.data || [];

@@ -29,7 +29,7 @@ const LeaveApplication = () => {
       }
 
       const response = await axios.get(
-        `http://localhost:3000/leaves/employee/${employeeId}`,
+        `${import.meta.env.VITE_API_URL}/leaves/employee/${employeeId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -145,7 +145,7 @@ const LeaveApplication = () => {
       const employeeId = localStorage.getItem("employeeId");
       
       await axios.post(
-        "http://localhost:3000/leaves/apply",
+        `${import.meta.env.VITE_API_URL}/leaves/apply`,
         {
           employeeId,
           startDate,
