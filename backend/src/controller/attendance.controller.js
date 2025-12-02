@@ -94,7 +94,13 @@ const checkOut = async (req,res)=>{
 const getAllAttendance = async(req,res)=>{
     try{
         const allAttendance = await prisma.attendance.findMany({
-            include:{employee:true}
+            include:{
+                employee:{
+                    include:{
+                        department:true
+                    }
+                }
+            }
         })
 
         return res.status(200).json(allAttendance)

@@ -8,7 +8,7 @@ import prisma from "../db.js"
 const register  = async (req,res)=>{
 
     try{
-        const {name,email,password,role,departmentId}=req.body;
+        const {name,email,password,role,department}=req.body;
 
         const existing = await prisma.employee.findUnique({
             where:{email:email}
@@ -20,14 +20,27 @@ const register  = async (req,res)=>{
 
         const hashedPassword = await bcrypt.hash(password,10)
 
+        let departmentId = null;
+        if (department) {
+            const dept = await prisma.department.findUnique({
+                where: { name: department }
+            });
+            if (dept) {
+                departmentId = dept.id;
+            } else {
+                // Optional: Create department if it doesn't exist, or return error.
+                // For now, let's return an error to be safe.
+                return res.status(400).json({ message: "Invalid department selected." });
+            }
+        }
 
         const addEmployee = await prisma.employee.create({
             data:{
                 name,
                 email,
                 password:hashedPassword,
-                role,departmentId
-
+                role: role.toUpperCase(), // Ensure role matches enum
+                departmentId
             }
         });
 
@@ -60,13 +73,13 @@ const Login = async(req,res)=>{
     })
 
     if(!employee){
-        return res.status(400).json({message:"Invliad email or password"})
+        return res.status(404).json({message:"User not found"})
     }
     
     const Match = await bcrypt.compare(password,employee.password)
 
     if(!Match){
-        return res.status(400).json({message:"Invliad email or password"})
+        return res.status(401).json({message:"Incorrect password"})
     }
 
 
