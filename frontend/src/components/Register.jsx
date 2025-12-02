@@ -134,7 +134,6 @@ const Register = () => {
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              placeholder="John Doe"
               required
             />
           </div>
@@ -148,7 +147,6 @@ const Register = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="you@company.com"
               required
             />
           </div>
@@ -163,7 +161,6 @@ const Register = () => {
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
-                placeholder="Enter your password"
                 required
               />
               <button
@@ -210,7 +207,6 @@ const Register = () => {
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              placeholder="+1 (555) 000-0000"
               required
             />
           </div>
