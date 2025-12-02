@@ -10,6 +10,7 @@ import "./App.css";
 import AttendanceRecords from "./components/AttendanceRecords.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Departments from "./components/DepartmentProfile.jsx";
+import LeaveApplication from "./components/LeaveApplication.jsx";
 import MarkAttendance from "./components/MarkAttendance.jsx";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="/departments" element={<Departments />} />
           <Route path="/mark-attendance" element={<MarkAttendance />} />
           <Route path="/attendance" element={<AttendanceRecords />} />
+          <Route path="/leave-application" element={<LeaveApplication />} />
         </Routes>
       </div>
     </Router>
