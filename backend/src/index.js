@@ -12,7 +12,15 @@ const app = express();
 const port = 3000;
 
 app.use(cors({
-    origin: ["http://localhost:5173", "https://hr-attendence-tracker-git-main-fuvs-projects.vercel.app", "https://hr-attendence-tracker.vercel.app"],
+    origin: function (origin, callback) {
+        const allowedOrigins = ["http://localhost:5173"];
+        // Allow Vercel previews and production
+        if (!origin || allowedOrigins.includes(origin) || /^https:\/\/hr-attendence-tracker.*\.vercel\.app$/.test(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json())
