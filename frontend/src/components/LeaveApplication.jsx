@@ -5,15 +5,18 @@ import Sidebar from "./Sidebar";
 import "../styles/LeaveApplication.css";
 
 const LeaveApplication = () => {
-  const [startDate, setStartDate] = useState("12/05/2023");
-  const [endDate, setEndDate] = useState("12/09/2023");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [reason, setReason] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(11); // December (0-indexed)
-  const [selectedYear, setSelectedYear] = useState(2023);
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth());
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
 
   const navigate = useNavigate();
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [leaveBalance, setLeaveBalance] = useState(0);
+  const TOTAL_ANNUAL_LEAVES = 20; // Default annual leave allowance
 
   useEffect(() => {
     fetchLeaves();
@@ -64,6 +67,23 @@ const LeaveApplication = () => {
       }));
 
       setLeaveRequests(formattedLeaves);
+      
+      // Calculate leave balance (approved + pending leaves for current year)
+      const currentYear = new Date().getFullYear();
+      const usedLeaves = leaves
+        .filter(leave => {
+          const leaveYear = new Date(leave.startDate).getFullYear();
+          return leaveYear === currentYear && (leave.status === 'APPROVED' || leave.status === 'PENDING');
+        })
+        .reduce((total, leave) => {
+          const days = Math.ceil(
+            (new Date(leave.endDate) - new Date(leave.startDate)) /
+              (1000 * 60 * 60 * 24)
+          ) + 1;
+          return total + days;
+        }, 0);
+      
+      setLeaveBalance(TOTAL_ANNUAL_LEAVES - usedLeaves);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching leaves:", error);
@@ -112,6 +132,16 @@ const LeaveApplication = () => {
     }
   };
 
+  const isDateInRange = (day, month, year) => {
+    if (!startDate || !endDate) return false;
+    
+    const currentDateObj = new Date(year, month, day);
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    return currentDateObj >= start && currentDateObj <= end;
+  };
+
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
     const firstDay = getFirstDayOfMonth(selectedMonth, selectedYear);
@@ -124,7 +154,7 @@ const LeaveApplication = () => {
 
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
-      const isSelected = day >= 5 && day <= 9; // Highlight selected range (5-9)
+      const isSelected = isDateInRange(day, selectedMonth, selectedYear);
       days.push(
         <div
           key={day}
@@ -196,11 +226,18 @@ const LeaveApplication = () => {
         <div className="leave-stats">
           <div className="stat-card">
             <p className="stat-label">Total Days Selected</p>
-            <h2 className="stat-value">5</h2>
+            <h2 className="stat-value">
+              {startDate && endDate
+                ? Math.ceil(
+                    (new Date(endDate) - new Date(startDate)) /
+                      (1000 * 60 * 60 * 24)
+                  ) + 1
+                : 0}
+            </h2>
           </div>
           <div className="stat-card">
             <p className="stat-label">Remaining Leave Balance</p>
-            <h2 className="stat-value">12 Days</h2>
+            <h2 className="stat-value">{leaveBalance} Days</h2>
           </div>
         </div>
 
@@ -213,20 +250,21 @@ const LeaveApplication = () => {
               <div className="form-group">
                 <label>Start Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  placeholder="12/05/2023"
+                  required
                 />
               </div>
 
               <div className="form-group">
                 <label>End Date</label>
                 <input
-                  type="text"
+                  type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  placeholder="12/09/2023"
+                  min={startDate}
+                  required
                 />
               </div>
 

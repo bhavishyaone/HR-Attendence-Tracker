@@ -27,13 +27,18 @@ const EmployeeDetail = () => {
         }
 
         const headers = { Authorization: `Bearer ${token}` };
+        const apiUrl = import.meta.env.VITE_API_URL;
+        
+        console.log("API URL:", apiUrl);
+        console.log("Employee ID:", employeeId);
 
         // 1. Fetch Employee Details
         const empRes = await axios.get(
-          `${import.meta.env.VITE_API_URL}/employees/${employeeId}`,
+          `${apiUrl}/employees/${employeeId}`,
           { headers }
         );
         const empData = empRes.data;
+        console.log("Employee Data:", empData);
 
         // 2. Fetch Attendance
         const attRes = await axios.get(
@@ -149,7 +154,10 @@ const EmployeeDetail = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error fetching employee profile:", error);
+        console.error("Error details:", error.response?.data || error.message);
         setLoading(false);
+        // Set a basic employee object so the page can still render
+        setEmployee(null);
       }
     };
 
@@ -157,11 +165,59 @@ const EmployeeDetail = () => {
   }, [navigate]);
 
   if (loading) {
-    return <div className="loading">Loading profile...</div>;
+    return (
+      <div className="employee-detail-container">
+        <Sidebar />
+        <div className="employee-detail-content">
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '80vh',
+            fontSize: '18px',
+            color: '#6B7280'
+          }}>
+            Loading profile...
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!employee) {
-    return <div className="error">Failed to load profile.</div>;
+    return (
+      <div className="employee-detail-container">
+        <Sidebar />
+        <div className="employee-detail-content">
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            height: '80vh',
+            gap: '16px'
+          }}>
+            <div style={{ fontSize: '18px', color: '#EF4444' }}>
+              Failed to load profile. Please check the console for errors.
+            </div>
+            <button 
+              onClick={() => navigate('/dashboard')}
+              style={{
+                padding: '12px 24px',
+                background: '#667EEA',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const getStatusClass = (status) => {
